@@ -21,11 +21,14 @@
 #include <Adafruit_ILI9341.h>
 #include <Wire.h>      // this is needed for FT6206
 #include <Adafruit_FT6206.h>
+#include <RTClib.h>
+#include <DS3231.h>
+//#include "RTClib.h"
 
 
 // The FT6206 uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 ctp = Adafruit_FT6206();
-
+DS3231 rtc(SDA, SCL);
 // The display also uses hardware SPI, plus #9 & #10
 #define TFT_CS 10
 #define TFT_DC 9
@@ -36,12 +39,13 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define PENRADIUS 3
 int prevTab, currentTab;
 
+
 enum Mode {Heat, AC, Auto, Off};
-enum Status {AC_On, Heat_On, Neither};
+enum Status {AC_On, Heat_On, Neither, Both};
 enum Day {Sun, Mon, Tues, Wed, Thurs, Fri, Sat};
 
 Mode prevMode;
-class DateTime
+class Date
 {
     Day currentDay = Sun;
     //Getters
@@ -88,7 +92,7 @@ class DateTime
     {
       AM = am;
     }
-    void displayDateTime(Adafruit_ILI9341 tft, DateTime *dt)
+    void displayDate(Adafruit_ILI9341 tft, Date *dt)
     {
       tft.setRotation(1);
       tft.setTextColor(ILI9341_WHITE);
@@ -137,9 +141,9 @@ class Temperature
       this->currentStatus = Neither;
     }
     //Getters
-    int getCurrentDegrees()
+    int getCurrentDegrees(DS3231 rtc)
     {
-      return currentDegrees;
+      return rtc.getTemp();
     }
     Mode getCurrentMode()
     {
@@ -170,12 +174,14 @@ class Temperature
     {
       currentStatus = newStatus;
     }
-    void displayOptions(Adafruit_ILI9341 tft, Temperature *temp)
+    void displayOptions(Adafruit_ILI9341 tft, Temperature *temp, DS3231 rtc)
     {
       tft.setRotation(1);
       tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*2.75, BOXSIZE*0.2);
+      tft.println(rtc.getTimeStr());
       tft.setCursor(BOXSIZE * 2, BOXSIZE * 2);
-      tft.println(temp->getCurrentDegrees());
+      tft.println(rtc.getTemp());
       tft.fillTriangle(BOXSIZE * 4.25, BOXSIZE, BOXSIZE * 4, BOXSIZE * 1.5, BOXSIZE * 4.5, BOXSIZE * 1.5, ILI9341_WHITE);
       tft.fillRect(BOXSIZE*4, BOXSIZE*1.5, BOXSIZE * 0.5, BOXSIZE*0.5, ILI9341_WHITE);
       tft.setTextColor(ILI9341_BLACK);
@@ -208,9 +214,9 @@ class Temperature
       } else if (temp->getCurrentMode() == Auto){
         tft.drawRect(BOXSIZE*3, BOXSIZE*0.5, BOXSIZE, BOXSIZE, ILI9341_CYAN);
       } else if (temp->getCurrentMode() == AC){
-        tft.drawRect(BOXSIZE*1.5, BOXSIZE*2, BOXSIZE, BOXSIZE, ILI9341_CYAN);
-      } else if (temp->getCurrentMode() == Heat){
         tft.drawRect(BOXSIZE*3, BOXSIZE*2, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+      } else if (temp->getCurrentMode() == Heat){
+        tft.drawRect(BOXSIZE*1.5, BOXSIZE*2, BOXSIZE, BOXSIZE, ILI9341_CYAN);
       }
       tft.setRotation(0);
     }
@@ -223,6 +229,8 @@ class Temperature
         tft.println("AC On");
       } else if (temp->getCurrentStatus() == Heat){
         tft.println("Heat On");
+      } else if (temp->getCurrentStatus() == Both){
+        tft.println("AC and Heat On");
       } else {
         tft.println("Neither On");
       }
@@ -238,16 +246,27 @@ class Temperature
       tft.println(newValue);
       tft.setRotation(0);
     }
-    
+    void refreshTime(Adafruit_ILI9341 tft, DS3231 rtc)
+    {
+      tft.setRotation(1);
+      Serial.println(rtc.getTimeStr());
+      tft.fillRect(BOXSIZE*2.75, BOXSIZE*0.2, BOXSIZE*1.5, BOXSIZE*0.5, ILI9341_BLACK);
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*2.75, BOXSIZE*0.2);
+      tft.println(rtc.getTimeStr());
+      tft.setRotation(0);
+    }
 };
 
 
 Temperature *temp;
-DateTime *dt;
+Date *dt;
 int currentSetTemp;
 void setup(void) {
+  pinMode(7, OUTPUT);
+  pinMode(6, OUTPUT);
   temp = new Temperature();
-  dt = new DateTime();
+  dt = new Date();
   currentSetTemp = temp->getSetDegrees(); 
   while (!Serial);     // used for leonardo debugging
 
@@ -255,6 +274,7 @@ void setup(void) {
   Serial.println(F("Cap Touch Paint!"));
 
   tft.begin();
+  rtc.begin();
 
   if (! ctp.begin(40)) {  // pass in 'sensitivity' coefficient
     Serial.println("Couldn't start FT6206 touchscreen controller");
@@ -281,11 +301,13 @@ void setup(void) {
   tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
   currentTab  = 3;
   //tft.println(temp->getCurrentDegrees());
-  temp->displayOptions(tft, temp);
+  temp->displayOptions(tft, temp, rtc);
   
 }
 
 void loop() {
+  temp->refreshTime(tft, rtc);
+  delay(1000);
   // Wait for a touch
   if (! ctp.touched()) {
     return;
@@ -318,7 +340,7 @@ void loop() {
       currentTab = 0;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4, BOXSIZE * 4, ILI9341_BLACK);
       tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
-      dt->displayDateTime(tft, dt);
+      dt->displayDate(tft, dt);
     } else if (p.x < BOXSIZE * 2) {
       currentTab = 1;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4, BOXSIZE * 4, ILI9341_BLACK);
@@ -333,7 +355,7 @@ void loop() {
       currentTab = 3;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4, BOXSIZE * 4, ILI9341_BLACK);
       tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
-      temp->displayOptions(tft, temp);
+      temp->displayOptions(tft, temp, rtc);
     }
     
     if (prevTab != currentTab) {
@@ -386,29 +408,41 @@ void loop() {
       if (p.y > BOXSIZE * 1.5 && p.y < BOXSIZE*2.5 && p.x > BOXSIZE*2 && p.x < BOXSIZE*3) {
         prevMode = temp->getCurrentMode();
         temp->setCurrentMode(Off);
+        temp->setCurrentStatus(Neither);
          tft.setRotation(1);
         tft.drawRect(BOXSIZE*1.5, BOXSIZE*0.5, BOXSIZE, BOXSIZE, ILI9341_CYAN);
         tft.setRotation(0);
+        digitalWrite(7, LOW);
+        digitalWrite(6, LOW);
       } else if (p.y > BOXSIZE * 3 && p.y < BOXSIZE*4 && p.x > BOXSIZE*2 && p.x < BOXSIZE*3) {
         prevMode = temp->getCurrentMode();
         temp->setCurrentMode(Auto);
+        temp->setCurrentStatus(Both);
          tft.setRotation(1);
         tft.drawRect(BOXSIZE*3, BOXSIZE*0.5, BOXSIZE, BOXSIZE, ILI9341_CYAN);
         tft.setRotation(0);
+        digitalWrite(7, HIGH);
+        digitalWrite(6, HIGH);
       }
       else if (p.y > BOXSIZE * 1.5 && p.y < BOXSIZE*2.5 && p.x > BOXSIZE*0.5 && p.x < BOXSIZE*1.5) {
         prevMode = temp->getCurrentMode();
-        temp->setCurrentMode(AC);
+        temp->setCurrentMode(Heat);
+        temp->setCurrentStatus(Heat_On);
          tft.setRotation(1);
         tft.drawRect(BOXSIZE*1.5, BOXSIZE*2, BOXSIZE, BOXSIZE, ILI9341_CYAN);
         tft.setRotation(0);
+        digitalWrite(7, HIGH);
+        digitalWrite(6, LOW);
       }
       else if (p.y > BOXSIZE * 3 && p.y < BOXSIZE*4 && p.x > BOXSIZE*0.5 && p.x < BOXSIZE*1.5) {
         prevMode = temp->getCurrentMode();
-        temp->setCurrentMode(Heat);
+        temp->setCurrentMode(AC);
+        temp->setCurrentStatus(AC_On);
          tft.setRotation(1);
         tft.drawRect(BOXSIZE*3, BOXSIZE*2, BOXSIZE, BOXSIZE, ILI9341_CYAN);
         tft.setRotation(0);
+        digitalWrite(7, LOW);
+        digitalWrite(6, HIGH);
       }
 
       Serial.print(temp->getCurrentMode());
@@ -450,6 +484,11 @@ void loop() {
        }
         
     }
+
+    if (currentTab == 1){
+      
+    }
+    
 
     delay(500);
 }
