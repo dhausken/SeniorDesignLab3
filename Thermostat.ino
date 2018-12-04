@@ -37,12 +37,13 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // Size of the color selection boxes and the paintbrush size
 #define BOXSIZE 60
 #define PENRADIUS 3
+#define GRAY 0x7BEF
+#define LIGHT_GRAY 0xC618
 int prevTab, currentTab, prevSelect, currentSelect;
 
 
 enum Mode {Heat, AC, Auto, Off};
 enum Status {AC_On, Heat_On, Neither, Both};
-
 Mode prevMode;
 
 class Date
@@ -156,11 +157,11 @@ class Temperature
       tft.setTextSize(6);
       tft.setCursor(BOXSIZE * 2, BOXSIZE * 1.5);
       tft.println(temp->getSetDegrees());
-      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE*0.5, BOXSIZE * 4, BOXSIZE * 1.5, BOXSIZE * 5, BOXSIZE * 1.5, ILI9341_WHITE);
-      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE * 3, BOXSIZE * 4, BOXSIZE * 2, BOXSIZE * 5, BOXSIZE * 2, ILI9341_WHITE);
-      tft.fillRect(BOXSIZE*1.5, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_WHITE);
-      tft.fillRect(BOXSIZE*3, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_WHITE);
-      tft.setTextColor(ILI9341_BLACK);
+      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE*0.5, BOXSIZE * 4, BOXSIZE * 1.5, BOXSIZE * 5, BOXSIZE * 1.5, LIGHT_GRAY);
+      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE * 3, BOXSIZE * 4, BOXSIZE * 2, BOXSIZE * 5, BOXSIZE * 2, LIGHT_GRAY);
+      tft.fillRect(BOXSIZE*1.5, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_RED);
+      tft.fillRect(BOXSIZE*3, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_GREEN);
+      tft.setTextColor(ILI9341_WHITE);
       tft.setTextSize(2);
       tft.setCursor(BOXSIZE*1.52, BOXSIZE*3.4);
       tft.println("Clear");
@@ -177,44 +178,67 @@ class Temperature
       tft.fillRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_WHITE);
       tft.fillRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_WHITE);
       tft.setTextSize(2);
+      tft.setTextColor(GRAY);
       tft.setCursor(BOXSIZE*2, BOXSIZE * 1.25);
       tft.println("Off");
+      tft.setTextColor(ILI9341_GREEN);
       tft.setCursor(BOXSIZE*3.85, BOXSIZE * 1.25);
       tft.println("Auto");
+      tft.setTextColor(ILI9341_BLUE);
       tft.setCursor(BOXSIZE*2, BOXSIZE * 3);
       tft.println("AC");
+      tft.setTextColor(ILI9341_RED);
       tft.setCursor(BOXSIZE*3.85, BOXSIZE * 3);
       tft.println("Heat");
       if (temp->getCurrentMode() == Off){
-        tft.drawRect(BOXSIZE*1.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.fillRect(BOXSIZE*1.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, GRAY);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*2, BOXSIZE * 1.25);
+        tft.println("Off");
       } else if (temp->getCurrentMode() == Auto){
-        tft.drawRect(BOXSIZE*3.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
-      } else if (temp->getCurrentMode() == Heat){
-        tft.drawRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.fillRect(BOXSIZE*3.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_GREEN);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*3.85, BOXSIZE * 1.25);
+        tft.println("Auto");
       } else if (temp->getCurrentMode() == AC){
-        tft.drawRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.fillRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_BLUE);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*2, BOXSIZE * 3);
+        tft.println("AC");
+      } else if (temp->getCurrentMode() == Heat){
+        tft.fillRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_RED);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*3.85, BOXSIZE * 3);
+        tft.println("Heat");
       }
       tft.setRotation(0);
     }
     void displayStatus(Adafruit_ILI9341 tft, Temperature *temp)
     {
       tft.setRotation(1);
-      tft.setTextColor(ILI9341_WHITE);
       tft.setTextSize(5);
       tft.setCursor(BOXSIZE * 1.5, BOXSIZE * 1.5);
       tft.println(String(rtc.getTemp()) + " F");
       tft.setTextSize(2);
       Serial.println(temp->getCurrentStatus());
       if (temp->getCurrentStatus() == AC_On){
+        tft.setTextColor(ILI9341_BLUE);
         tft.setCursor(BOXSIZE*2.5, BOXSIZE * 3);
         tft.println("AC On");
       } else if (temp->getCurrentStatus() == Heat_On){
+        tft.setTextColor(ILI9341_RED);
         tft.setCursor(BOXSIZE*2.25, BOXSIZE * 3);
         tft.println("Heat On");
       } else if (temp->getCurrentStatus() == Both){
+        tft.setTextColor(ILI9341_GREEN);
         tft.setCursor(BOXSIZE*1.75, BOXSIZE * 3);
         tft.println("AC and Heat On");
       } else {
+        tft.setTextColor(GRAY);
         tft.setCursor(BOXSIZE*2, BOXSIZE * 3);
         tft.println("Neither On");
       }
@@ -267,8 +291,8 @@ class Temperature
     void displayDate(Adafruit_ILI9341 tft, DS3231 rtc, Date *dt)
     {
       tft.setRotation(1);
-      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE*0.5, BOXSIZE * 4, BOXSIZE * 1.5, BOXSIZE * 5, BOXSIZE * 1.5, ILI9341_WHITE);
-      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE * 3, BOXSIZE * 4, BOXSIZE * 2, BOXSIZE * 5, BOXSIZE * 2, ILI9341_WHITE);
+      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE*0.5, BOXSIZE * 4, BOXSIZE * 1.5, BOXSIZE * 5, BOXSIZE * 1.5, LIGHT_GRAY);
+      tft.fillTriangle(BOXSIZE * 4.5, BOXSIZE * 3, BOXSIZE * 4, BOXSIZE * 2, BOXSIZE * 5, BOXSIZE * 2, LIGHT_GRAY);
       tft.setTextColor(ILI9341_WHITE);
       if (rtc.getDOWStr() == "Saturday" || rtc.getDOWStr() == "Wednesday"){
         tft.setTextSize(2);
@@ -285,9 +309,9 @@ class Temperature
       tft.println(":");
       tft.setCursor(BOXSIZE*3, BOXSIZE * 2.25);
       tft.println(rtc.getTime().min);
-      tft.fillRect(BOXSIZE*1.5, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_WHITE);
-      tft.fillRect(BOXSIZE*3, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_WHITE);
-      tft.setTextColor(ILI9341_BLACK);
+      tft.fillRect(BOXSIZE*1.5, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_RED);
+      tft.fillRect(BOXSIZE*3, BOXSIZE*3.25, BOXSIZE, BOXSIZE*0.5, ILI9341_GREEN);
+      tft.setTextColor(ILI9341_WHITE);
       tft.setTextSize(2);
       tft.setCursor(BOXSIZE*1.52, BOXSIZE*3.4);
       tft.println("Clear");
@@ -344,8 +368,27 @@ void setup(void) {
   tft.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
   tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
 
+  tft.setRotation(1);
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setCursor(BOXSIZE*0.15, BOXSIZE*0.4);
+  tft.println("Current");
+  tft.setCursor(BOXSIZE*0.1, BOXSIZE*1.4);
+  tft.println("Set Temp");
+  tft.setCursor(BOXSIZE*0.3, BOXSIZE*2.4);
+  tft.println("Mode");
+  tft.setCursor(BOXSIZE*0.1, BOXSIZE*3.4);
+  tft.println("Set Time");
+  tft.setRotation(0);
   // select the current color 'red
-  tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+  tft.fillRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
+  tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+  tft.setRotation(1);
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setCursor(BOXSIZE*0.15, BOXSIZE*0.4);
+  tft.println("Current");
+  tft.setRotation(0);
   currentTab  = 3;
   currentSelect = 0;
   //tft.println(temp->getCurrentDegrees());
@@ -393,7 +436,14 @@ void loop() {
     if (p.x < BOXSIZE) {
       currentTab = 0;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4.5, BOXSIZE * 4.5, ILI9341_BLACK);
-      tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+      tft.fillRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
+      tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+      tft.setRotation(1);
+      tft.setTextSize(1);
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*0.1, BOXSIZE*3.4);
+      tft.println("Set Time");
+      tft.setRotation(0);
       temp->displayDate(tft, rtc, dt);
       currentSetHour = dt->getHour();
       currentSetMin = dt->getMinute();
@@ -401,17 +451,38 @@ void loop() {
     } else if (p.x < BOXSIZE * 2) {
       currentTab = 1;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4.5, BOXSIZE * 4.5, ILI9341_BLACK);
-      tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+      tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
+      tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+      tft.setRotation(1);
+      tft.setTextSize(1);
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*0.3, BOXSIZE*2.4);
+      tft.println("Mode");
+      tft.setRotation(0);
       temp->displayModes(tft, temp);
     } else if (p.x < BOXSIZE * 3) {
       currentTab = 2;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4.5, BOXSIZE * 4.5, ILI9341_BLACK);
-      tft.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+      tft.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
+      tft.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+      tft.setRotation(1);
+      tft.setTextSize(1);
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*0.1, BOXSIZE*1.4);
+      tft.println("Set Temp");
+      tft.setRotation(0);
       temp->displayOptions(tft, temp);
     } else if (p.x < BOXSIZE * 4) {
       currentTab = 3;
       tft.fillRect(0, BOXSIZE, BOXSIZE * 4.5, BOXSIZE * 4.5, ILI9341_BLACK);
-      tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
+      tft.fillRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
+      tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+      tft.setRotation(1);
+      tft.setTextSize(1);
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setCursor(BOXSIZE*0.15, BOXSIZE*0.4);
+      tft.println("Current");
+      tft.setRotation(0);
       temp->displayStatus(tft, temp);
     }
     
@@ -419,18 +490,42 @@ void loop() {
       if (prevTab == 0){
         tft.fillRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
         tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+        tft.setRotation(1);
+        tft.setTextSize(1);
+        tft.setTextColor(ILI9341_BLACK);
+        tft.setCursor(BOXSIZE*0.1, BOXSIZE*3.4);
+        tft.println("Set Time");
+        tft.setRotation(0);
       }
       if (prevTab == 1){
         tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
         tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+        tft.setRotation(1);
+        tft.setTextSize(1);
+        tft.setTextColor(ILI9341_BLACK);
+        tft.setCursor(BOXSIZE*0.3, BOXSIZE*2.4);
+        tft.println("Mode");
+        tft.setRotation(0);
       }
       if (prevTab == 2){
         tft.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
         tft.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+        tft.setRotation(1);
+        tft.setTextSize(1);
+        tft.setTextColor(ILI9341_BLACK);
+        tft.setCursor(BOXSIZE*0.1, BOXSIZE*1.4);
+        tft.println("Set Temp");
+        tft.setRotation(0);
       }
       if (prevTab == 3){
         tft.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
         tft.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, ILI9341_BLACK);
+        tft.setRotation(1);
+        tft.setTextSize(1);
+        tft.setTextColor(ILI9341_BLACK);
+        tft.setCursor(BOXSIZE*0.15, BOXSIZE*0.4);
+        tft.println("Current");
+        tft.setRotation(0);
       }
     }
     
@@ -477,8 +572,12 @@ void loop() {
         prevMode = temp->getCurrentMode();
         temp->setCurrentMode(Off);
         temp->setCurrentStatus(Neither);
-         tft.setRotation(1);
-        tft.drawRect(BOXSIZE*1.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.setRotation(1);
+        tft.fillRect(BOXSIZE*1.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, GRAY);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*2, BOXSIZE * 1.25);
+        tft.println("Off");
         tft.setRotation(0);
         digitalWrite(7, LOW);
         digitalWrite(6, LOW);
@@ -486,8 +585,12 @@ void loop() {
         prevMode = temp->getCurrentMode();
         temp->setCurrentMode(Auto);
         temp->setCurrentStatus(Both);
-         tft.setRotation(1);
-        tft.drawRect(BOXSIZE*3.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.setRotation(1);
+        tft.fillRect(BOXSIZE*3.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_GREEN);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*3.85, BOXSIZE * 1.25);
+        tft.println("Auto");
         tft.setRotation(0);
         digitalWrite(7, HIGH);
         digitalWrite(6, HIGH);
@@ -497,7 +600,11 @@ void loop() {
         temp->setCurrentMode(AC);
         temp->setCurrentStatus(AC_On);
          tft.setRotation(1);
-        tft.drawRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.fillRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_BLUE);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*2, BOXSIZE * 3);
+        tft.println("AC");
         tft.setRotation(0);
         digitalWrite(7, HIGH);
         digitalWrite(6, LOW);
@@ -506,8 +613,12 @@ void loop() {
         prevMode = temp->getCurrentMode();
         temp->setCurrentMode(Heat);
         temp->setCurrentStatus(Heat_On);
-         tft.setRotation(1);
-        tft.drawRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_CYAN);
+        tft.setRotation(1);
+        tft.fillRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_RED);
+        tft.setTextSize(2);
+        tft.setTextColor(ILI9341_WHITE);
+        tft.setCursor(BOXSIZE*3.85, BOXSIZE * 3);
+        tft.println("Heat");
         tft.setRotation(0);
         digitalWrite(7, LOW);
         digitalWrite(6, HIGH);
@@ -527,16 +638,19 @@ void loop() {
           }
           if (prevMode == Auto){
             tft.fillRect(BOXSIZE*3.5, BOXSIZE*0.75, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_WHITE);
+            tft.setTextColor(ILI9341_GREEN);
             tft.setCursor(BOXSIZE*3.85, BOXSIZE * 1.25);
             tft.println("Auto");
           }
           if (prevMode == AC){
             tft.fillRect(BOXSIZE*1.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_WHITE);
+            tft.setTextColor(ILI9341_BLUE);
             tft.setCursor(BOXSIZE*2, BOXSIZE * 3);
             tft.println("AC");
           }
           if (prevMode == Heat){
             tft.fillRect(BOXSIZE*3.5, BOXSIZE*2.5, BOXSIZE*1.5, BOXSIZE*1.25, ILI9341_WHITE);
+            tft.setTextColor(ILI9341_RED);
             tft.setCursor(BOXSIZE*3.85, BOXSIZE * 3);
             tft.println("Heat");
           }
@@ -664,38 +778,35 @@ void loop() {
       } else if (p.x > BOXSIZE *0.25 && p.x < BOXSIZE *0.75) {
         //Set Button
         if (p.y > BOXSIZE *3 && p.y < BOXSIZE *4){
-          
-          //temp->setSetDegrees(currentSetTemp);
           Serial.println("Set");
           if (currentSelect == 0) {
             
           }else if (currentSelect == 1) {
-            rtc.setTime(uint8_t(currentSetHour), uint8_t(rtc.getTime().min), uint8_t(0));
+            rtc.setTime(currentSetHour, rtc.getTime().min, 0);
             Serial.print("Hour");
             temp->refreshSetTime(tft, BOXSIZE * 1.75, BOXSIZE * 2.25, BOXSIZE * 1.65, BOXSIZE * 2.1, rtc.getTime().hour);
           }
           else if (currentSelect == 2) {
-            rtc.setTime(uint8_t(rtc.getTime().hour), uint8_t(currentSetMin), uint8_t(0));
+            rtc.setTime(rtc.getTime().hour, currentSetMin, 0);
             Serial.print("Min");
             temp->refreshSetTime(tft, BOXSIZE * 3, BOXSIZE * 2.25, BOXSIZE * 2.9, BOXSIZE * 2.1, rtc.getTime().min);
           }
-          //temp->refreshSetTime(tft, BOXSIZE * 2, BOXSIZE * 1.5, temp->getSetDegrees());
-          //tft.setTextColor(ILI9341_WHITE);
-          //Serial.print(temp->getSetDegrees());
         }
         //Clear Button
         if (p.y > BOXSIZE *1.5 && p.y < BOXSIZE *2.5){
           Serial.println("Clear");
           if (currentSelect == 0) {
              currentSetDay = dt->getCurrentDay();
-          }else if (currentSelect == 1 || currentSelect == 2) {
-            currentSetHour = dt->getHour();
-            currentSetMin = dt->getMinute();
+          }else if (currentSelect == 1) {
+            currentSetHour = rtc.getTime().hour;
             Serial.print("Hour");
             temp->refreshSetTime(tft, BOXSIZE * 1.75, BOXSIZE * 2.25, BOXSIZE * 1.65, BOXSIZE * 2.1, currentSetHour);
+          }
+          else if (currentSelect == 2) {
+            currentSetMin = rtc.getTime().min;
+            Serial.print("Min");
             temp->refreshSetTime(tft, BOXSIZE * 3, BOXSIZE * 2.25, BOXSIZE * 2.9, BOXSIZE * 2.1, currentSetMin);
           }
-          //temp->refreshSetTime(tft, BOXSIZE * 2, BOXSIZE * 1.5, temp->getSetDegrees());
         }
       }
     }
